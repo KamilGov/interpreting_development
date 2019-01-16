@@ -1,0 +1,149 @@
+#K-Means clustering implementation
+import math
+import csv
+import random
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+import numpy as np
+
+#Some hints on how to start have been added to this file.
+#You will have to add more code that just the hints provided here for the full implementation.
+
+
+fig = plt.figure()
+ax1 = plt.subplot(1,1,1)
+
+cd = {1: 'ro', 2: 'yo', 3: 'bo', 4: 'go', 5: 'co', 6: 'mo'}
+# ====
+# Define a function that computes the distance between two data points
+
+#for row in fReader:
+ #   print row
+
+def distance(point1,point2):
+    x = (point1[0] - point2[0])**2
+    y = (point1[1] - point2[1])**2
+    return math.sqrt(x+y);
+    
+    
+
+# ====
+# Define a function that reads data in from the csv files  HINT: http://docs.python.org/2/library/csv.html
+
+def csvReader (theFile):
+    f = open(theFile, 'rb')
+    xy = {}
+    fReader = csv.reader(f)
+    i = 0 
+    for row in fReader:
+        if i >0:
+            xy.update({row[0]: [float(row[1]), float(row[2])]})
+        i += 1
+    return xy;
+        
+
+
+# ====
+# Write the initialisation procedure
+
+data1953 = csvReader('databoth.csv')
+#data1953 = [[x] for x in data1953]
+numSamples = input("How many clusters shall we make? \n")
+setNumberOfClusters = numSamples
+iterations = input("How many iterations would you like to do? \n")
+setNumberOfIterations = iterations
+sampleCount = 1
+#samples will be the random starting points
+samples = {}
+#create a dictionary to calculate means
+means = {}
+#create a dictionary of removed countries
+removed = {}
+#Convergence meter
+sumSquaredDistances = {x:0 for x in range(1,setNumberOfClusters+1)}
+#Loop over until we've created desired number of clusters
+while numSamples >0:
+    #randomSample is the name of the country
+    randomSample = random.sample(data1953, 1)[0]
+    print ("random Sample = " + str(randomSample))
+    #update samples with randoms
+    samples.update({sampleCount: data1953[randomSample]})
+    means.update({sampleCount:{randomSample: data1953[randomSample]}})
+    #remove starting sample from dataset
+    sampleCount += 1
+    numSamples -= 1
+    # plot initial points only if not iterating
+    if iterations == 1:
+        ax1.plot(data1953[randomSample][0], data1953[randomSample][1], 'yx')
+    removed.update({randomSample:data1953[randomSample]})
+    del data1953[randomSample]
+
+sampleCount -= 1
+#counter to make sure removed data only gets added in the first iteration
+dataCounter = sampleCount
+#Set Convergence meter to return to
+
+print samples
+print ("means is = " + str(means))
+
+# ====
+# Implement the k-means algorithm, using appropriate looping
+
+
+while iterations>0:
+    
+    for row in data1953:
+        d = 1000000
+        colour = 1
+       
+        for sample in samples:
+            newD = distance(data1953[row], samples[sample])
+            if newD<d:
+                d = newD
+                colour = sample
+                #mean = [(row[0]+samples[sample][0])/2, (row[1]+samples[sample][1])/2]
+            sumSquaredDistances[sample] += d    
+        (means[colour])[row] = data1953[row]
+        
+        
+        if iterations == 1:
+            ax1.plot(data1953[row][0], data1953[row][1], cd[colour])
+        
+    
+    print ("SumSquaredDistances: " + str(sumSquaredDistances))
+    sumSquaredDistances = {x:0 for x in range(1,setNumberOfClusters+1)}
+    while sampleCount >0:
+        x=0
+        y=0    
+        for country in means[sampleCount]:    
+            x+=means[sampleCount][country][0]
+            y+=means[sampleCount][country][1]
+        xMean = x/len(means[sampleCount])
+        yMean = y/len(means[sampleCount])
+        mean = [xMean, yMean]
+        #make new starting points
+        samples[sampleCount] = mean
+        sampleCount -= 1
+        numSamples += 1
+        
+    #add removed samples back to the dataset
+    data1953.update(removed) 
+    final = means
+    means = {}
+    while numSamples >0:
+        #means.update({numSamples:[]})
+        means.update({numSamples:{}})
+        sampleCount += 1
+        numSamples -= 1    
+    
+    
+    iterations -= 1
+
+plt.show()
+for clusters in range(1,setNumberOfClusters+1):
+    print ("The number of countries in cluster " + str(clusters) +": " + str(len(final[clusters])))
+    print ("The Countries in cluster " + str(clusters) + " are: \n" + str(final[clusters].keys()))
+    print ("The mean life expectancy of cluster " + str(clusters) + " is " + str(samples[clusters][0]))
+    print ("The mean birth rate of cluster " + str(clusters) + " is " + str(samples[clusters][1]))
+    # ====
+    # Print out the results
